@@ -42,6 +42,7 @@ Desktop shell updates are distributed as signed and notarized DMGs.
    npm run typecheck --workspace apps/desktop
    npm run build --workspace apps/desktop
    npm run builder --workspace apps/desktop -- --mac dmg --publish never
+   npm run dist:win:nsis --workspace apps/desktop
    ```
 
 5. Tag the verified release, for example:
@@ -59,3 +60,4 @@ Desktop shell updates are distributed as signed and notarized DMGs.
 - Keep a push-capable maintainer credential locally or install the GitHub App on
   this repository for release automation.
 - Configure Apple Developer ID signing and notarization for macOS DMGs.
+- Configure a Windows code-signing certificate for Windows installers.

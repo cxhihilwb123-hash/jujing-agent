@@ -15,10 +15,16 @@
 
 桌面应用名称：`巨鲸智能体`
 
-macOS 构建产物位于：
+macOS 构建产物：
 
 ```bash
 apps/desktop/release/巨鲸智能体-0.17.0-mac-arm64.dmg
+```
+
+Windows x64 构建产物：
+
+```bash
+apps/desktop/release/巨鲸智能体-0.17.0-win-x64.exe
 ```
 
 当前桌面壳已经完成白标包装，包括：
@@ -52,6 +58,7 @@ npm run typecheck --workspace apps/desktop
 npm run test:desktop:platforms --workspace apps/desktop
 npm run build --workspace apps/desktop
 npm run builder --workspace apps/desktop -- --mac dmg --publish never
+npm run dist:win:nsis --workspace apps/desktop
 ```
 
 ## 发布注意事项
@@ -62,6 +69,7 @@ npm run builder --workspace apps/desktop -- --mac dmg --publish never
 
 - Apple Developer ID 签名
 - macOS notarization
+- Windows 代码签名证书
 - 正式版本号和发布标签
 - 发布包下载页或 GitHub Release
 

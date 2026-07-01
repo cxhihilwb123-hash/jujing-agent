@@ -35,10 +35,11 @@ const APP_ROOT = path.resolve(__dirname, '..')
 const REPO_ROOT = path.resolve(APP_ROOT, '..', '..')
 const STAGE_ROOT = path.join(APP_ROOT, 'build', 'native-deps')
 
-// The target arch may be overridden by electron-builder via npm_config_arch
-// (e.g. `npm run dist -- --arm64`); fall back to the build host's arch.
-const TARGET_ARCH = process.env.npm_config_arch || process.arch
-const TARGET_PLATFORM = process.platform
+// Cross-platform release scripts can override the staged native dependency
+// target. Fall back to npm_config_* for ad-hoc electron-builder invocations,
+// then to the build host.
+const TARGET_ARCH = process.env.DESKTOP_TARGET_ARCH || process.env.npm_config_arch || process.arch
+const TARGET_PLATFORM = process.env.DESKTOP_TARGET_PLATFORM || process.env.npm_config_platform || process.platform
 
 // Modules to stage. The "from" path is the hoisted location in the workspace
 // root; "to" is the layout we want inside build/native-deps/.  The "include"

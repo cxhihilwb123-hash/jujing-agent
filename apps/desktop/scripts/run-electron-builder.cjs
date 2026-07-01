@@ -28,6 +28,23 @@ function distBinary(dist) {
   return path.join(dist, "electron")
 }
 
+function explicitTargetPlatforms(argv) {
+  const targets = new Set()
+  for (const arg of argv) {
+    if (arg === '--mac' || arg === '-m' || arg.startsWith('--mac=')) targets.add('darwin')
+    if (arg === '--win' || arg === '-w' || arg.startsWith('--win=')) targets.add('win32')
+    if (arg === '--linux' || arg === '-l' || arg.startsWith('--linux=')) targets.add('linux')
+  }
+  return targets
+}
+
+function canReuseLocalElectronDist(argv) {
+  const targets = explicitTargetPlatforms(argv)
+  // No explicit platform means electron-builder targets the current host.
+  if (targets.size === 0) return true
+  return targets.size === 1 && targets.has(process.platform)
+}
+
 function electronBuilderCli() {
   const pkgJson = require.resolve("electron-builder/package.json")
   const bin = require(pkgJson).bin
@@ -36,16 +53,17 @@ function electronBuilderCli() {
 }
 
 const dist = electronDistDir()
+const cliArgs = process.argv.slice(2)
 const args = []
-if (dist && fs.existsSync(distBinary(dist))) {
+if (canReuseLocalElectronDist(cliArgs) && dist && fs.existsSync(distBinary(dist))) {
   args.push(`-c.electronDist=${dist}`)
 } else {
   console.warn(
-    "[run-electron-builder] no local electron dist; electron-builder will fetch " +
-      "via @electron/get (electronVersion + ELECTRON_MIRROR)."
+    "[run-electron-builder] using electron-builder managed Electron download " +
+      "(cross-platform target or no reusable local dist)."
   )
 }
-args.push(...process.argv.slice(2))
+args.push(...cliArgs)
 
 const result = spawnSync(process.execPath, [electronBuilderCli(), ...args], {
   stdio: "inherit",
