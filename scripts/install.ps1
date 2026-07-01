@@ -23,8 +23,8 @@ param(
     # exact ref.  Precedence: Commit > Tag > Branch.
     [string]$Commit = "",
     [string]$Tag = "",
-    [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }),
-    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }),
+    [string]$HermesHome = $(if ($env:JUJING_HOME) { $env:JUJING_HOME } else { "$env:LOCALAPPDATA\jujing-agent" }),
+    [string]$InstallDir = "",
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -60,6 +60,19 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($HermesHome)) {
+    $HermesHome = if ($env:LOCALAPPDATA) { "$env:LOCALAPPDATA\jujing-agent" } else { "$env:USERPROFILE\AppData\Local\jujing-agent" }
+}
+if ([string]::IsNullOrWhiteSpace($InstallDir)) {
+    $InstallDir = Join-Path $HermesHome "hermes-agent"
+}
+
+# Keep the current installer process and all child processes on the same home.
+# Persisted user environment is handled later in Set-PathVariable and uses the
+# product-specific JUJING_HOME name so upstream Hermes CLI installs stay intact.
+$env:JUJING_HOME = $HermesHome
+$env:HERMES_HOME = $HermesHome
 
 # Suppress Invoke-WebRequest's per-chunk progress bar.  Windows PowerShell
 # 5.1's progress UI repaints synchronously on every received byte, which
@@ -1940,6 +1953,15 @@ function Set-PathVariable {
     } else {
         $hermesBin = "$InstallDir\venv\Scripts"
     }
+
+    if ($env:JUJING_DESKTOP_BOOTSTRAP -eq "1") {
+        $env:JUJING_HOME = $HermesHome
+        $env:HERMES_HOME = $HermesHome
+        $env:Path = "$hermesBin;$env:Path"
+        Write-Info "Desktop bootstrap mode: using isolated JUJING_HOME=$HermesHome without changing user PATH or HERMES_HOME"
+        Write-Success "hermes command ready"
+        return
+    }
     
     # Add the venv Scripts dir to user PATH so hermes is globally available
     # On Windows, the hermes.exe in venv\Scripts\ has the venv Python baked in
@@ -1956,14 +1978,14 @@ function Set-PathVariable {
         Write-Info "PATH already configured"
     }
     
-    # Set HERMES_HOME so the Python code finds config/data in the right place.
-    # Only needed on Windows where we install to %LOCALAPPDATA%\hermes instead
-    # of the Unix default ~/.hermes
-    $currentHermesHome = [Environment]::GetEnvironmentVariable("HERMES_HOME", "User")
-    if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
-        [Environment]::SetEnvironmentVariable("HERMES_HOME", $HermesHome, "User")
-        Write-Success "Set HERMES_HOME=$HermesHome"
+    # Persist the branded home without mutating the upstream HERMES_HOME name.
+    # The Jujing build of hermes_constants.py reads JUJING_HOME first.
+    $currentJujingHome = [Environment]::GetEnvironmentVariable("JUJING_HOME", "User")
+    if (-not $currentJujingHome -or $currentJujingHome -ne $HermesHome) {
+        [Environment]::SetEnvironmentVariable("JUJING_HOME", $HermesHome, "User")
+        Write-Success "Set JUJING_HOME=$HermesHome"
     }
+    $env:JUJING_HOME = $HermesHome
     $env:HERMES_HOME = $HermesHome
     
     # Update current session
@@ -2052,7 +2074,7 @@ function Write-BootstrapMarker {
 function Copy-ConfigTemplates {
     Write-Info "Setting up configuration files..."
     
-    # Create the HERMES_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\hermes)
+    # Create the product home directory structure ($HermesHome, default %LOCALAPPDATA%\jujing-agent)
     New-Item -ItemType Directory -Force -Path "$HermesHome\cron" | Out-Null
     New-Item -ItemType Directory -Force -Path "$HermesHome\sessions" | Out-Null
     New-Item -ItemType Directory -Force -Path "$HermesHome\logs" | Out-Null
@@ -3147,7 +3169,7 @@ if ($IncludeDesktop) {
     $InstallStages += @{ Name = "desktop"; Title = "Building desktop app"; Category = "install"; NeedsUserInput = $false; Worker = "Stage-Desktop" }
 }
 $InstallStages += @(
-    @{ Name = "path";             Title = "Adding Hermes to PATH";                Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
+    @{ Name = "path";             Title = "Adding Jujing Agent to PATH";          Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
     @{ Name = "config-templates"; Title = "Writing configuration templates";      Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-ConfigTemplates" }
     @{ Name = "platform-sdks";    Title = "Installing messaging platform SDKs";   Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-PlatformSdks" }
     @{ Name = "bootstrap-marker"; Title = "Marking install complete";              Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-BootstrapMarker" }

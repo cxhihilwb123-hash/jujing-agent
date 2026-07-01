@@ -43,7 +43,6 @@ const { dashboardFallbackArgs, sourceDeclaresServe } = require('./backend-comman
 const { serializeJsonBody, setJsonRequestHeaders } = require('./oauth-net-request.cjs')
 const { fetchMarketplaceThemes, searchMarketplaceThemes } = require('./vscode-marketplace.cjs')
 const { buildDesktopBackendEnv, normalizeHermesHomeRoot } = require('./backend-env.cjs')
-const { readWindowsUserEnvVar } = require('./windows-user-env.cjs')
 const { readWslWindowsClipboardImage } = require('./wsl-clipboard-image.cjs')
 const { nativeOverlayWidth: computeNativeOverlayWidth } = require('./titlebar-overlay-width.cjs')
 const { readDirForIpc } = require('./fs-read-dir.cjs')
@@ -279,46 +278,36 @@ if (INSTALL_STAMP) {
   )
 }
 
-// HERMES_HOME — the user-facing root for everything Hermes-related. Mirrors
-// scripts/install.ps1's $HermesHome and scripts/install.sh's $HERMES_HOME.
+// HERMES_HOME remains the internal kernel contract, but 巨鲸智能体 resolves it
+// to a product-owned home so the desktop app can coexist with a separately
+// installed upstream Hermes CLI.
 //
 // Defaults:
-//   Windows: %LOCALAPPDATA%\hermes (matches install.ps1)
-//   macOS / Linux: ~/.hermes (matches install.sh)
+//   Windows: %LOCALAPPDATA%\jujing-agent (matches install.ps1)
+//   macOS / Linux: ~/.jujing-agent (matches install.sh)
 //
-// Special case for Windows: if the user has a legacy ~/.hermes directory
-// (e.g., from a prior pip install or a manual setup) AND no
-// %LOCALAPPDATA%\hermes yet, prefer the legacy path so we don't orphan their
-// existing config / sessions / .env. New installs go to %LOCALAPPDATA%.
-//
-// HERMES_DESKTOP_USER_DATA_DIR (used by test:desktop:fresh) puts the sandbox
-// HERMES_HOME beneath the throwaway userData dir so a fresh-install run never
-// touches the user's real ~/.hermes / %LOCALAPPDATA%\hermes.
+// Overrides:
+//   JUJING_HOME / JUJING_AGENT_HOME: explicit product home override.
+//   HERMES_HOME: dev-only compatibility override, ignored by packaged builds
+//                so an existing upstream CLI cannot redirect this desktop app.
+//   HERMES_DESKTOP_USER_DATA_DIR: test sandbox; keeps fresh-install runs away
+//                from the user's real app/CLI state.
 function resolveHermesHome() {
-  if (process.env.HERMES_HOME) return normalizeHermesHomeRoot(process.env.HERMES_HOME)
-  if (USER_DATA_OVERRIDE) return path.join(path.resolve(USER_DATA_OVERRIDE), 'hermes-home')
-  if (IS_WINDOWS) {
-    // A GUI app launched from Explorer inherits the environment block captured
-    // at login, so a HERMES_HOME set via `setx` AFTER login is invisible in
-    // process.env even though the CLI (a fresh shell) sees it. Without this the
-    // backend silently falls back to %LOCALAPPDATA%\hermes and reports "No
-    // inference provider configured" despite a valid configured home (#45471).
-    // Consult the live User-scoped registry value before the default below.
-    const fromRegistry = readWindowsUserEnvVar('HERMES_HOME')
-    if (fromRegistry) return normalizeHermesHomeRoot(fromRegistry)
+  const explicitJujingHome = process.env.JUJING_HOME || process.env.JUJING_AGENT_HOME
+  if (explicitJujingHome) return normalizeHermesHomeRoot(explicitJujingHome)
+  if (!IS_PACKAGED && process.env.HERMES_HOME) {
+    return normalizeHermesHomeRoot(process.env.HERMES_HOME)
   }
+  if (USER_DATA_OVERRIDE) return path.join(path.resolve(USER_DATA_OVERRIDE), 'jujing-home')
   if (IS_WINDOWS && process.env.LOCALAPPDATA) {
-    const localappdata = path.join(process.env.LOCALAPPDATA, 'hermes')
-    const legacy = path.join(app.getPath('home'), '.hermes')
-    // Migrate transparently to LOCALAPPDATA, but honour an existing legacy
-    // ~/.hermes setup (no LOCALAPPDATA install yet) so users don't lose state.
-    if (!directoryExists(localappdata) && directoryExists(legacy)) return legacy
-    return localappdata
+    return path.join(process.env.LOCALAPPDATA, 'jujing-agent')
   }
-  return path.join(app.getPath('home'), '.hermes')
+  return path.join(app.getPath('home'), IS_WINDOWS ? path.join('AppData', 'Local', 'jujing-agent') : '.jujing-agent')
 }
 
 const HERMES_HOME = resolveHermesHome()
+process.env.JUJING_HOME = HERMES_HOME
+process.env.HERMES_HOME = HERMES_HOME
 
 function hermesManagedNodePathEntries() {
   // NOTE: keep this ordering in sync with iter_hermes_node_dirs() in

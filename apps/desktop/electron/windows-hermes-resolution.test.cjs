@@ -24,6 +24,10 @@ function readMain() {
   return fs.readFileSync(path.join(__dirname, 'main.cjs'), 'utf8').replace(/\r\n/g, '\n')
 }
 
+function readInstallPs1() {
+  return fs.readFileSync(path.join(__dirname, '..', '..', '..', 'scripts', 'install.ps1'), 'utf8').replace(/\r\n/g, '\n')
+}
+
 test('findOnPath tries PATHEXT extensions before the bare (empty) name on Windows', () => {
   const source = readMain()
   // Fixed order: PATHEXT first, empty string LAST.
@@ -63,5 +67,47 @@ test('Windows bootstrap recovery chooses --update when any real-install signal i
     source,
     /updaterArgs = fileExists\(venvHermes\) \?/,
     'recovery regressed to gating only on the hermes.exe shim, which forces destructive --repair'
+  )
+})
+
+test('Jujing desktop home is isolated from upstream Hermes CLI defaults', () => {
+  const source = readMain()
+  assert.match(source, /process\.env\.JUJING_HOME \|\| process\.env\.JUJING_AGENT_HOME/)
+  assert.match(source, /'jujing-agent'/, 'Windows default must use the product-owned jujing-agent directory')
+  assert.match(source, /'\.jujing-agent'/, 'POSIX default must use the product-owned ~/.jujing-agent directory')
+  assert.match(
+    source,
+    /!IS_PACKAGED && process\.env\.HERMES_HOME/,
+    'HERMES_HOME should remain a development-only override'
+  )
+  assert.doesNotMatch(
+    source,
+    /readWindowsUserEnvVar\('HERMES_HOME'\)/,
+    'packaged desktop must not inherit the upstream CLI HERMES_HOME registry value'
+  )
+  assert.doesNotMatch(
+    source,
+    /path\.join\(process\.env\.LOCALAPPDATA, 'hermes'\)/,
+    'new Windows installs must not default to the upstream Hermes data directory'
+  )
+})
+
+test('Windows installer persists JUJING_HOME without rewriting user HERMES_HOME', () => {
+  const source = readInstallPs1()
+  assert.match(source, /SetEnvironmentVariable\("JUJING_HOME", \$HermesHome, "User"\)/)
+  assert.doesNotMatch(
+    source,
+    /\[string\]\$HermesHome = \$\(if \(\$env:JUJING_HOME\) \{ \$env:JUJING_HOME \} elseif \(\$env:HERMES_HOME\)/,
+    'installer default must not inherit an upstream CLI HERMES_HOME'
+  )
+  assert.doesNotMatch(
+    source,
+    /SetEnvironmentVariable\("HERMES_HOME", \$HermesHome, "User"\)/,
+    'installer must not mutate the upstream CLI HERMES_HOME user variable'
+  )
+  assert.match(
+    source,
+    /JUJING_DESKTOP_BOOTSTRAP[\s\S]+without changing user PATH or HERMES_HOME/,
+    'desktop bootstrap mode must avoid user-level PATH/HERMES_HOME writes'
   )
 })

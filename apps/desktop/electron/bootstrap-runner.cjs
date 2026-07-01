@@ -97,7 +97,7 @@ function bootstrapCacheDir(hermesHome) {
 }
 
 // The install.sh / install.ps1 that ships inside the already-installed agent
-// checkout under ~/.hermes/hermes-agent. Used as a last-resort fallback when
+// checkout under the product home. Used as a last-resort fallback when
 // the pinned commit can't be fetched from GitHub (e.g. a locally-built desktop
 // app stamped to an unpushed HEAD).
 function installedAgentInstallScript(hermesHome) {
@@ -327,9 +327,11 @@ function spawnPowerShell(scriptPath, args, { emit, stageName, abortSignal, herme
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          // Pass HERMES_HOME through so install.ps1 respects the caller's
-          // choice rather than re-computing the default.
-          HERMES_HOME: hermesHome || process.env.HERMES_HOME || ''
+          // Pass both names through: JUJING_HOME is the product-facing
+          // override, HERMES_HOME is the upstream kernel contract.
+          JUJING_DESKTOP_BOOTSTRAP: '1',
+          JUJING_HOME: hermesHome || process.env.JUJING_HOME || process.env.HERMES_HOME || '',
+          HERMES_HOME: hermesHome || process.env.JUJING_HOME || process.env.HERMES_HOME || ''
         }
       })
     )
@@ -403,7 +405,9 @@ function spawnBash(scriptPath, args, { emit, stageName, abortSignal, hermesHome 
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        HERMES_HOME: hermesHome || process.env.HERMES_HOME || ''
+        JUJING_DESKTOP_BOOTSTRAP: '1',
+        JUJING_HOME: hermesHome || process.env.JUJING_HOME || process.env.HERMES_HOME || '',
+        HERMES_HOME: hermesHome || process.env.JUJING_HOME || process.env.HERMES_HOME || ''
       }
     })
 

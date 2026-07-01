@@ -154,8 +154,9 @@ test('collectRelaunchArgs drops Electron internals, keeps user/launcher args', (
   assert.deepEqual(collectRelaunchArgs(undefined), [])
 })
 
-test('collectRelaunchEnv preserves HERMES_HOME + HERMES_DESKTOP_* + sandbox opt-out only', () => {
+test('collectRelaunchEnv preserves JUJING_HOME/HERMES_HOME + HERMES_DESKTOP_* + sandbox opt-out only', () => {
   const env = {
+    JUJING_HOME: '/home/u/.jujing-agent',
     HERMES_HOME: '/home/u/.hermes',
     HERMES_DESKTOP_REMOTE_URL: 'http://box:9119',
     HERMES_DESKTOP_REMOTE_TOKEN: 'secret',
@@ -166,6 +167,7 @@ test('collectRelaunchEnv preserves HERMES_HOME + HERMES_DESKTOP_* + sandbox opt-
     UNRELATED: 'x'
   }
   assert.deepEqual(collectRelaunchEnv(env), {
+    JUJING_HOME: '/home/u/.jujing-agent',
     HERMES_HOME: '/home/u/.hermes',
     HERMES_DESKTOP_REMOTE_URL: 'http://box:9119',
     HERMES_DESKTOP_REMOTE_TOKEN: 'secret',
