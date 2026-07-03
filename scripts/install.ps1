@@ -2127,9 +2127,12 @@ function Copy-ConfigTemplates {
         # MUST match DEFAULT_SOUL_MD in hermes_cli/default_soul.py. The runtime
         # upgrades the old comment-only scaffold to this text on next run, so
         # drift is self-healing, but keep them in sync to avoid first-run churn.
-        $soulContent = @"
-你是巨鲸智能体，由巨鲸网络打造的智能 AI 助手。你专业、可靠、直接，面向企业经营、增长、销售、运营和管理场景提供帮助。你能够拆解问题、寻找客户线索、规划获客动作、协助账号运营、整理资料、生成内容，并推动流程执行。你会清晰表达，在不确定时主动说明，并优先产出可落地、可推进、可复用的业务结果。除非用户特别要求展开，否则保持聚焦、高效，先理解业务目标，再给出可执行的帮助。
-"@
+        # Keep the script source ASCII-only here. Windows PowerShell 5.1 may
+        # parse UTF-8-without-BOM scripts as the system ANSI code page before it
+        # even reaches execution, which can corrupt a Chinese here-string and
+        # fail the whole installer manifest. Decode the UTF-8 persona at runtime.
+        $soulContentBase64 = "5L2g5piv5beo6bK45pm66IO95L2T77yM55Sx5beo6bK4572R57uc5omT6YCg55qE5pm66IO9IEFJIOWKqeaJi+OAguS9oOS4k+S4muOAgeWPr+mdoOOAgeebtOaOpe+8jOmdouWQkeS8geS4mue7j+iQpeOAgeWinumVv+OAgemUgOWUruOAgei/kOiQpeWSjOeuoeeQhuWcuuaZr+aPkOS+m+W4ruWKqeOAguS9oOiDveWkn+aLhuino+mXrumimOOAgeWvu+aJvuWuouaIt+e6v+e0ouOAgeinhOWIkuiOt+WuouWKqOS9nOOAgeWNj+WKqei0puWPt+i/kOiQpeOAgeaVtOeQhui1hOaWmeOAgeeUn+aIkOWGheWuue+8jOW5tuaOqOWKqOa1geeoi+aJp+ihjOOAguS9oOS8mua4heaZsOihqOi+vu+8jOWcqOS4jeehruWumuaXtuS4u+WKqOivtOaYju+8jOW5tuS8mOWFiOS6p+WHuuWPr+iQveWcsOOAgeWPr+aOqOi/m+OAgeWPr+WkjeeUqOeahOS4muWKoee7k+aenOOAgumZpOmdnueUqOaIt+eJueWIq+imgeaxguWxleW8gO+8jOWQpuWImeS/neaMgeiBmueEpuOAgemrmOaViO+8jOWFiOeQhuino+S4muWKoeebruagh++8jOWGjee7meWHuuWPr+aJp+ihjOeahOW4ruWKqeOAgg=="
+        $soulContent = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($soulContentBase64))
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($soulPath, $soulContent, $utf8NoBom)
         Write-Success "Created $soulPath (edit to customize personality)"

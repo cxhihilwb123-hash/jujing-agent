@@ -111,3 +111,17 @@ test('Windows installer persists JUJING_HOME without rewriting user HERMES_HOME'
     'desktop bootstrap mode must avoid user-level PATH/HERMES_HOME writes'
   )
 })
+
+test('Windows installer keeps SOUL.md persona parser-safe for PowerShell 5.1', () => {
+  const source = readInstallPs1()
+  assert.match(
+    source,
+    /\$soulContentBase64 = "[A-Za-z0-9+/=]+"/,
+    'persona text should be encoded so Windows PowerShell does not parse Chinese source text'
+  )
+  assert.doesNotMatch(
+    source,
+    /\$soulContent\s*=\s*@"[\s\S]*巨鲸智能体[\s\S]*"@/,
+    'Chinese here-strings can be misparsed by Windows PowerShell 5.1 when the script is read as ANSI'
+  )
+})
