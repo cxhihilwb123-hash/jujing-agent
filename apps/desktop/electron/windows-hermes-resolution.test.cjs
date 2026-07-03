@@ -112,6 +112,30 @@ test('Windows installer persists JUJING_HOME without rewriting user HERMES_HOME'
   )
 })
 
+test('Windows Git Bash lookup honors installer-persisted and Jujing-owned paths', () => {
+  const source = readMain()
+  assert.match(
+    source,
+    /readWindowsUserEnvVar\('HERMES_GIT_BASH_PATH'\)/,
+    'desktop must read the live User env value written during first-launch bootstrap'
+  )
+  assert.match(
+    source,
+    /process\.env\.HERMES_GIT_BASH_PATH/,
+    'desktop must mirror the resolved bash path into the backend environment'
+  )
+  assert.match(
+    source,
+    /path\.join\(HERMES_HOME, 'git', 'bin', 'bash\.exe'\)/,
+    'desktop must check the product-owned portable Git under JUJING_HOME/HERMES_HOME'
+  )
+  assert.match(
+    source,
+    /path\.join\(localAppData, 'jujing-agent', 'git', 'bin', 'bash\.exe'\)/,
+    'desktop must check the default Jujing Windows portable Git path'
+  )
+})
+
 test('Windows installer keeps SOUL.md persona parser-safe for PowerShell 5.1', () => {
   const source = readInstallPs1()
   assert.match(

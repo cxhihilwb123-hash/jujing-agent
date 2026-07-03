@@ -43,6 +43,7 @@ const { dashboardFallbackArgs, sourceDeclaresServe } = require('./backend-comman
 const { serializeJsonBody, setJsonRequestHeaders } = require('./oauth-net-request.cjs')
 const { fetchMarketplaceThemes, searchMarketplaceThemes } = require('./vscode-marketplace.cjs')
 const { buildDesktopBackendEnv, normalizeHermesHomeRoot } = require('./backend-env.cjs')
+const { readWindowsUserEnvVar } = require('./windows-user-env.cjs')
 const { readWslWindowsClipboardImage } = require('./wsl-clipboard-image.cjs')
 const { nativeOverlayWidth: computeNativeOverlayWidth } = require('./titlebar-overlay-width.cjs')
 const { readDirForIpc } = require('./fs-read-dir.cjs')
@@ -1609,9 +1610,9 @@ function findSystemPython() {
 
 // findGitBash — locate bash.exe on Windows. Hermes' terminal tool requires
 // bash (POSIX shell), and on Windows that's almost always Git for Windows'
-// bundled Git Bash. We check the same set of locations tools/environments/
-// local.py:_find_bash() checks at runtime, so a positive result here means
-// the agent will be able to start a terminal too.
+// bundled Git Bash. A positive result is mirrored into HERMES_GIT_BASH_PATH so
+// the Python backend sees the same bash path even during first launch, before
+// Explorer refreshes the User environment block.
 //
 // On non-Windows hosts bash is part of the OS and this just returns the
 // first bash on PATH.
@@ -1620,12 +1621,18 @@ function findGitBash() {
     return findOnPath('bash')
   }
 
-  // install.ps1 drops PortableGit at %LOCALAPPDATA%\hermes\git\... — checked
-  // first so users who installed via install.ps1 are detected before we
-  // start probing system-wide locations.
+  // install.ps1 persists this when it finds either a custom Git install or
+  // PortableGit. GUI-launched apps often do not see newly-written User env
+  // values in process.env until logout/restart, so read HKCU\Environment too.
+  const configured = process.env.HERMES_GIT_BASH_PATH || readWindowsUserEnvVar('HERMES_GIT_BASH_PATH')
   const localAppData = process.env.LOCALAPPDATA || ''
   const candidates = []
+  if (configured) candidates.push(configured)
+  candidates.push(path.join(HERMES_HOME, 'git', 'bin', 'bash.exe'))
+  candidates.push(path.join(HERMES_HOME, 'git', 'usr', 'bin', 'bash.exe'))
   if (localAppData) {
+    candidates.push(path.join(localAppData, 'jujing-agent', 'git', 'bin', 'bash.exe'))
+    candidates.push(path.join(localAppData, 'jujing-agent', 'git', 'usr', 'bin', 'bash.exe'))
     candidates.push(path.join(localAppData, 'hermes', 'git', 'bin', 'bash.exe'))
     candidates.push(path.join(localAppData, 'hermes', 'git', 'usr', 'bin', 'bash.exe'))
   }
@@ -1638,13 +1645,18 @@ function findGitBash() {
   }
 
   for (const candidate of candidates) {
-    if (fileExists(candidate)) return candidate
+    if (fileExists(candidate)) {
+      process.env.HERMES_GIT_BASH_PATH = candidate
+      return candidate
+    }
   }
 
   // Last resort — bash on PATH (covers WSL bash, MSYS2, custom installs).
   // On WSL hosts findOnPath itself filters out Windows-binary paths via
   // isWindowsBinaryPathInWsl, so we won't hand back a wsl.exe shim either.
-  return findOnPath('bash')
+  const fromPath = findOnPath('bash')
+  if (fromPath) process.env.HERMES_GIT_BASH_PATH = fromPath
+  return fromPath
 }
 
 function getVenvPython(venvRoot) {
