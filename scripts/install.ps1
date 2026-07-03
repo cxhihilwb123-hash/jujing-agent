@@ -1,5 +1,5 @@
 # ============================================================================
-# 巨鲸智能体 Installer for Windows
+# Jujing Agent Installer for Windows
 # ============================================================================
 # Installation script for Windows (PowerShell).
 # Uses uv for fast Python provisioning and package management.
@@ -43,15 +43,15 @@ param(
 
     # --- Desktop GUI build (opt-in) ---
     # When set, install.ps1 includes Stage-Desktop in the manifest and
-    # builds apps/desktop into a launchable 巨鲸智能体.exe.
+    # builds apps/desktop into a launchable Jujing desktop exe.
     #
     # Why opt-in:
     #   * Hermes-Setup.exe (the signed Tauri bootstrap installer) passes
     #     -IncludeDesktop so a user who installed via the GUI ends up
     #     with a launchable desktop binary.
     #   * The Electron desktop's own bootstrap-runner.cjs runs install.ps1
-    #     from inside an already-launched 巨鲸智能体.exe; if THAT recursively
-    #     built apps/desktop it would try to overwrite the live 巨鲸智能体.exe
+    #     from inside an already-launched Jujing desktop exe; if THAT recursively
+    #     built apps/desktop it would try to overwrite the live Jujing desktop exe
     #     on disk and fail. The recursive path omits the flag.
     #   * The canonical CLI one-liner (irm | iex) omits the flag too;
     #     terminal users don't need a desktop binary built for them, and
@@ -60,6 +60,15 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# Keep this script source ASCII-only. Windows PowerShell 5.1 may parse UTF-8
+# files without a BOM using the system ANSI code page before any runtime
+# encoding setup can execute. Runtime-decoded text is safe because parsing has
+# already succeeded.
+$JujingProductName = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("5beo6bK45pm66IO95L2T"))
+$JujingExeName = "$JujingProductName.exe"
+$JujingBannerSubtitle = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("5LyB5Lia5pm66IO95L2T6L+Q6KGM546v5aKD5a6J6KOF5Zmo44CC"))
+$JujingRepairHint = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("ICDor7fph43mlrDov5DooYzlt6jpsrjmmbrog73kvZPlronoo4XljIXvvIzmiJbov5DooYzpmo/ljIXmj5DkvpvnmoQgaW5zdGFsbC5wczE="))
 
 if ([string]::IsNullOrWhiteSpace($HermesHome)) {
     $HermesHome = if ($env:LOCALAPPDATA) { "$env:LOCALAPPDATA\jujing-agent" } else { "$env:USERPROFILE\AppData\Local\jujing-agent" }
@@ -220,9 +229,9 @@ function Get-WindowsArch {
 function Write-Banner {
     Write-Host ""
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|              * 巨鲸智能体 Installer                     |" -ForegroundColor Magenta
+    Write-Host ("|              * {0} Installer                     |" -f $JujingProductName) -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|  企业智能体运行环境安装器。                             |" -ForegroundColor Magenta
+    Write-Host ("|  {0}                             |" -f $JujingBannerSubtitle) -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host ""
 }
@@ -456,7 +465,7 @@ function Get-PowerShellHostExe {
 }
 
 function Install-Uv {
-    # Hermes owns its own uv at $HermesHome\bin\uv.exe.  Always install there —
+    # Hermes owns its own uv at $HermesHome\bin\uv.exe.  Always install there -
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (hermes_cli/managed_uv.py) looks in the same
     # place, so install.ps1 and `hermes update` stay in sync.
@@ -521,7 +530,7 @@ function Sync-EnvPath {
 # prior process is not visible here.  Later stages (Test-Python,
 # Install-Venv, Install-Dependencies, Install-PlatformSdks) call this
 # at the top to populate $script:UvCmd from the managed location.
-# Throws if uv is not findable — the caller's stage then surfaces a
+# Throws if uv is not findable - the caller's stage then surfaces a
 # clean error via the stage-driver's try/catch.
 function Resolve-UvCmd {
     # Already resolved (default invocation path: Install-Uv ran earlier
@@ -537,7 +546,7 @@ function Resolve-UvCmd {
         # Stale; fall through to re-discover.
     }
 
-    # Check the managed location first — this is where Install-Uv puts it.
+    # Check the managed location first - this is where Install-Uv puts it.
     $managedUv = Join-Path $HermesHome "bin\uv.exe"
     if (Test-Path $managedUv) {
         $script:UvCmd = $managedUv
@@ -1997,7 +2006,7 @@ function Set-PathVariable {
 function Write-BootstrapMarker {
     # Writes $InstallDir\.hermes-bootstrap-complete which tells the Hermes
     # desktop app (apps/desktop/electron/main.cjs) "install.ps1 ran
-    # successfully — DON'T trigger the legacy first-launch bootstrap
+    # successfully - DON'T trigger the legacy first-launch bootstrap
     # runner."
     #
     # Schema mirrors what main.cjs's writeBootstrapMarker() / isBootstrap
@@ -2018,7 +2027,7 @@ function Write-BootstrapMarker {
     # Resolve the pinned commit: explicit -Commit wins, otherwise read
     # the checkout's HEAD via git. If git can't run, leave commit empty
     # and the marker will fail desktop validation (pinnedCommit.length
-    # >= 7) — better to be invalid than wrong.
+    # >= 7) - better to be invalid than wrong.
     $pinnedCommit = $Commit
     if (-not $pinnedCommit) {
         # PS 5.1 doesn't support the ?. null-conditional operator, so
@@ -2033,7 +2042,7 @@ function Write-BootstrapMarker {
                     $pinnedCommit = $resolved.Trim()
                 }
             } catch {
-                # Ignore — pinnedCommit stays empty, marker stays invalid,
+                # Ignore - pinnedCommit stays empty, marker stays invalid,
                 # desktop falls through to its legacy bootstrap path.
             } finally {
                 Pop-Location
@@ -2052,7 +2061,7 @@ function Write-BootstrapMarker {
         pinnedCommit  = $pinnedCommit
         pinnedBranch  = $pinnedBranch
         completedAt   = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-        # desktopVersion field intentionally omitted — only the desktop
+        # desktopVersion field intentionally omitted - only the desktop
         # app knows its own version, and the marker validator doesn't
         # require it. The desktop fills it in if/when it writes its
         # own marker (e.g. after a future in-app upgrade).
@@ -2061,7 +2070,7 @@ function Write-BootstrapMarker {
 
     # Write WITHOUT a UTF-8 BOM. PowerShell 5.1's `Set-Content -Encoding UTF8`
     # always emits a BOM, and Node's plain JSON.parse rejects the BOM as an
-    # unexpected character — so a BOM'd marker would silently fail the
+    # unexpected character - so a BOM'd marker would silently fail the
     # desktop's readJson(), make isBootstrapComplete() return null, and the
     # desktop would re-run the legacy bootstrap runner anyway. Defeats the
     # whole point. Use the .NET API directly for BOM-less UTF-8.
@@ -2164,7 +2173,7 @@ function Install-NodeDeps {
         # Cross-process driver mode (Hermes-Setup.exe runs each -Stage NAME
         # in a fresh powershell.exe) means $script:HasNode set by Stage-Node
         # in the previous process isn't visible here. Re-probe rather than
-        # trust the stale global — Stage-Node already ran successfully or
+        # trust the stale global - Stage-Node already ran successfully or
         # the bootstrap would've aborted, so npm is reachable.
         if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
             Write-Info "Skipping Node.js dependencies (Node not installed)"
@@ -2436,7 +2445,7 @@ function Clear-ElectronBuildCache {
 # Last-resort Electron mirror after GitHub download fails (#47266).
 $script:DesktopElectronFallbackMirror = "https://npmmirror.com/mirrors/electron/"
 
-# Electron package dir — workspace-local nest first, then root hoist.
+# Electron package dir - workspace-local nest first, then root hoist.
 function Get-ElectronDir {
     param([string]$InstallDir)
     $desktopLocal = Join-Path $InstallDir 'apps\desktop\node_modules\electron'
@@ -2503,7 +2512,7 @@ function Try-RestoreElectronDist {
 }
 
 function Install-Desktop {
-    # Build apps/desktop into a launchable 巨鲸智能体.exe. Only called from
+    # Build apps/desktop into a launchable Jujing desktop exe. Only called from
     # Stage-Desktop, which is itself only included in the manifest when
     # -IncludeDesktop was passed to install.ps1.
     #
@@ -2516,8 +2525,8 @@ function Install-Desktop {
     # produces the unpacked binary at apps/desktop/release/<os>-unpacked/.
     #
     # The Tauri bootstrap installer's launch_hermes_desktop command
-    # resolves apps/desktop/release/win-unpacked/巨鲸智能体.exe directly,
-    # so an "unpacked" build (electron-builder --dir) is enough — we
+    # resolves apps/desktop/release/win-unpacked/<Jujing exe> directly,
+    # so an "unpacked" build (electron-builder --dir) is enough - we
     # don't need to produce an NSIS/MSI artifact here.
 
     # Always re-resolve Node here. Stages run in separate PowerShell processes,
@@ -2571,7 +2580,7 @@ function Install-Desktop {
         #
         # The streaming sink in bootstrap.rs's run_install_script
         # captures every stdout/stderr line as it's emitted, so we don't
-        # need a side TEMP log file — the installer's bootstrap log
+        # need a side TEMP log file - the installer's bootstrap log
         # IS the artifact a support engineer reads.
         #
         # Prefer `npm ci`: it wipes node_modules and reinstalls from the
@@ -2617,7 +2626,7 @@ function Install-Desktop {
     # 2. Build apps/desktop. `npm run pack` runs:
     #      assert-root-install + write-build-stamp + stage-native-deps +
     #      tsc -b + vite build + electron-builder --dir
-    # The --dir mode produces an unpacked 巨鲸智能体.exe in
+    # The --dir mode produces an unpacked Jujing desktop exe in
     # apps/desktop/release/win-unpacked/ without bundling NSIS/MSI;
     # we don't need a distributable installer artifact, just a
     # launchable binary the Tauri installer can spawn.
@@ -2626,9 +2635,9 @@ function Install-Desktop {
     # NOT signing the output. Combined with signAndEditExecutable=false in
     # apps/desktop/package.json's build.win block, electron-builder never
     # invokes signtool and therefore never fetches/extracts winCodeSign
-    # (whose macOS symlinks crash 7-Zip on non-admin Windows — a dead end we
+    # (whose macOS symlinks crash 7-Zip on non-admin Windows - a dead end we
     # are NOT trying to work around). The Jujing icon + product name are
-    # stamped onto 巨鲸智能体.exe by our own rcedit step (Set-DesktopExeIdentity)
+    # stamped onto the Jujing desktop exe by our own rcedit step (Set-DesktopExeIdentity)
     # AFTER this build, completely decoupled from electron-builder signing.
     #
     # WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD explicitly cleared as
@@ -2697,7 +2706,7 @@ function Install-Desktop {
         Pop-Location
         throw
     } finally {
-        # Restore env to whatever the caller had — don't leak our
+        # Restore env to whatever the caller had - don't leak our
         # signing-off override into anything install.ps1 invokes later
         # (Stage-PlatformSdks, etc.).
         $env:CSC_IDENTITY_AUTO_DISCOVERY = $prevCSCAuto
@@ -2708,10 +2717,10 @@ function Install-Desktop {
 
     # 3. Sanity-check the produced binary. Probe both arches so this works
     # on x64 and arm64 build machines. Keep Hermes.exe as a migration fallback
-    # for old checkouts, but new Jujing builds produce 巨鲸智能体.exe.
+    # for old checkouts, but new Jujing builds produce the branded desktop exe.
     $exeCandidates = @(
-        "$desktopDir\release\win-unpacked\巨鲸智能体.exe",
-        "$desktopDir\release\win-arm64-unpacked\巨鲸智能体.exe",
+        (Join-Path "$desktopDir\release\win-unpacked" $JujingExeName),
+        (Join-Path "$desktopDir\release\win-arm64-unpacked" $JujingExeName),
         "$desktopDir\release\win-unpacked\Hermes.exe",
         "$desktopDir\release\win-arm64-unpacked\Hermes.exe"
     )
@@ -2726,21 +2735,21 @@ function Install-Desktop {
         }
     }
     if (-not $found) {
-        throw "Desktop build completed but no 巨鲸智能体.exe was found under $desktopDir\release\*-unpacked\"
+        throw "Desktop build completed but no $JujingExeName was found under $desktopDir\release\*-unpacked\"
     }
 
-    # 3b. The Jujing icon + identity are stamped onto 巨鲸智能体.exe by the
+    # 3b. The Jujing icon + identity are stamped onto the desktop exe by the
     #     electron-builder `afterPack` hook (apps/desktop/scripts/after-pack.cjs)
-    #     during `npm run pack` above — for every build, so the installer's
+    #     during `npm run pack` above - for every build, so the installer's
     #     --update rebuild stays branded too. No separate stamp step needed here.
     #     electron-builder's own rcedit step stays disabled (signAndEditExecutable
     #     =false) because enabling it drags in signtool -> winCodeSign -> the
     #     unfixable symlink crash; the afterPack hook runs rcedit directly.
 
     # 4. Create Start Menu + Desktop shortcuts pointing DIRECTLY at the packed
-    #    巨鲸智能体.exe. We deliberately do NOT point them at `hermes desktop`: that
+    #    Jujing desktop exe. We deliberately do NOT point them at `hermes desktop`: that
     #    command rebuilds (npm install + electron-builder) on every launch,
-    #    which would cost minutes each time. The packed exe is the consumer —
+    #    which would cost minutes each time. The packed exe is the consumer -
     #    launching it directly is instant, and updates flow through the
     #    installer's --update path (which rebuilds once, then relaunches).
     New-DesktopShortcuts -TargetExe $desktopExe
@@ -2783,7 +2792,7 @@ function New-DesktopShortcuts {
                 $sc.TargetPath = $TargetExe
                 $sc.WorkingDirectory = $workDir
                 $sc.IconLocation = $iconLocation
-                $sc.Description = '巨鲸智能体'
+                $sc.Description = $JujingProductName
                 $sc.Save()
                 Write-Success "Shortcut created: $lnkPath"
             } catch {
@@ -2796,11 +2805,11 @@ function New-DesktopShortcuts {
         # cached bitmap. Critical on the --update path: the exe was re-stamped
         # with the Jujing icon, but without this the shortcut can keep drawing
         # the old Electron icon until the user manually refreshes / reboots.
-        # Best-effort and silent — never fail the install over a cosmetic cache.
+        # Best-effort and silent - never fail the install over a cosmetic cache.
         try {
             & ie4uinit.exe -show 2>$null
         } catch {
-            # ie4uinit may be absent/renamed on some SKUs — ignore.
+            # ie4uinit may be absent/renamed on some SKUs - ignore.
         }
     } catch {
         Write-Warn "Skipping shortcut creation: $($_.Exception.Message)"
@@ -3459,7 +3468,7 @@ try {
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    Write-Host "  请重新运行巨鲸智能体安装包，或运行随包提供的 install.ps1" -ForegroundColor Yellow
+    Write-Host $JujingRepairHint -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }

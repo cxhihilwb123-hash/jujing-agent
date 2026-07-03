@@ -125,3 +125,17 @@ test('Windows installer keeps SOUL.md persona parser-safe for PowerShell 5.1', (
     'Chinese here-strings can be misparsed by Windows PowerShell 5.1 when the script is read as ANSI'
   )
 })
+
+test('Windows installer script source stays ASCII-only for PowerShell 5.1 parser safety', () => {
+  const source = readInstallPs1()
+  const nonAsciiLines = source
+    .split('\n')
+    .map((line, index) => ({ line, number: index + 1 }))
+    .filter(({ line }) => /[^\x00-\x7F]/.test(line))
+
+  assert.deepEqual(
+    nonAsciiLines,
+    [],
+    'install.ps1 must stay ASCII-only; runtime-decode localized strings instead'
+  )
+})
