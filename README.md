@@ -2,46 +2,59 @@
 
 巨鲸智能体是巨鲸网络面向企业经营、增长、销售、运营和管理场景打造的桌面 AI 助手。
 
-它基于开源 Hermes Agent 内核进行品牌化发行，桌面端已完成巨鲸网络标识、中文界面、企业场景文案、安装脚本和内核更新通道的定制。用户安装后打开的就是巨鲸智能体，不需要额外安装上游 Hermes 桌面端。
+它基于开源 Hermes Agent 内核定制发行，提供可安装的 macOS 和 Windows 桌面客户端。用户安装后打开的是巨鲸智能体，不需要额外安装上游 Hermes 桌面端。
 
-## 产品定位
+## 下载
 
-- 企业问题拆解与行动计划生成
-- 客户线索整理、获客动作规划与跟进辅助
-- 账号运营、内容生成、资料汇总和流程推进
-- 多模型接入、本地运行环境和桌面化使用体验
+当前桌面版发布页：
 
-## 桌面端
+https://github.com/cxhihilwb123-hash/jujing-agent/releases/tag/jujing-desktop-v0.17.0
 
-桌面应用名称：`巨鲸智能体`
+安装包：
 
-macOS 构建产物：
+- macOS Apple Silicon: `Jujing-Agent-0.17.0-mac-arm64.dmg`
+- Windows x64: `Jujing-Agent-0.17.0-win-x64.exe`
+- 校验文件: `SHA256SUMS.txt`
 
-```bash
-apps/desktop/release/巨鲸智能体-0.17.0-mac-arm64.dmg
-```
+当前版本适合小规模客户试用和内部交付。正式大规模商业分发前，建议完成 macOS 公证和 Windows 代码签名。
 
-Windows x64 构建产物：
+## 能做什么
 
-```bash
-apps/desktop/release/巨鲸智能体-0.17.0-win-x64.exe
-```
+巨鲸智能体面向企业日常业务场景，而不是单一开发工具。它可以辅助团队：
 
-当前桌面壳已经完成白标包装，包括：
+- 拆解经营问题，形成行动计划和执行清单
+- 整理客户线索，规划获客动作和跟进策略
+- 辅助账号运营、内容生成、资料汇总和流程推进
+- 连接多模型能力，在桌面环境中完成连续任务
+- 沉淀企业常用流程、话术、资料和业务经验
 
-- 应用名称、窗口标题、菜单和关于信息
-- 图标、启动界面和主界面品牌标识
+## 桌面端品牌
+
+桌面端已完成巨鲸网络白标包装：
+
+- 应用名称：`巨鲸智能体`
+- 应用标识、窗口标题、菜单、关于信息已替换
 - 默认中文界面和企业场景欢迎文案
-- 安装脚本和更新源
+- macOS bundle id：`com.jujing.network.agent`
+- 协议名：`jujing-agent`
+- 默认数据目录与上游 Hermes CLI 隔离
+
+默认数据目录：
+
+- macOS/Linux: `~/.jujing-agent`
+- Windows: `%LOCALAPPDATA%\jujing-agent`
+
+这意味着同一台机器上已经安装上游 Hermes CLI 时，仍可以同时安装巨鲸智能体桌面版。
 
 ## 更新策略
 
-本仓库是巨鲸智能体的发布源。
+本仓库是巨鲸智能体的公开发布源。
 
-- `origin`：`https://github.com/cxhihilwb123-hash/jujing-agent.git`
-- `upstream`：`https://github.com/NousResearch/hermes-agent.git`
+- 用户首次安装：从 GitHub Releases 下载桌面安装包。
+- 用户点击更新内核：通过 `hermes update` 从本仓库拉取已经验证过的巨鲸内核版本。
+- 桌面壳更新：通过新的 Release 安装包分发，不由内核更新自动覆盖。
 
-用户端更新只更新运行内核，不会自动覆盖巨鲸桌面壳。上游 Hermes 的更新应先同步到本仓库，经过巨鲸包装检查和测试后，再发布给用户。
+上游 Hermes Agent 的更新不会直接推送给用户。维护者应先把上游变更同步到本仓库，保留巨鲸品牌、中文文案、桌面壳和更新策略，验证通过后再发布。
 
 详细流程见：
 
@@ -56,23 +69,32 @@ docs/jujing-release-flow.md
 ```bash
 npm run typecheck --workspace apps/desktop
 npm run test:desktop:platforms --workspace apps/desktop
+uv run --with pytest pytest tests/test_hermes_constants.py
 npm run build --workspace apps/desktop
-npm run builder --workspace apps/desktop -- --mac dmg --publish never
+npm run dist:mac:dmg --workspace apps/desktop
 npm run dist:win:nsis --workspace apps/desktop
 ```
 
-## 发布注意事项
+## 当前交付状态
 
-内部测试可以直接使用本地构建的 DMG。
+已完成：
 
-正式对外分发前，建议完成：
+- macOS Apple Silicon 安装包
+- Windows x64 安装包
+- GitHub Release 下载页
+- 巨鲸品牌包装
+- 中文界面与企业场景文案
+- 与上游 Hermes CLI 的本地数据隔离
+- 内核更新指向本仓库
 
-- Apple Developer ID 签名
-- macOS notarization
+仍建议补齐：
+
+- Apple Developer ID 签名与 notarization
 - Windows 代码签名证书
-- 正式版本号和发布标签
-- 发布包下载页或 GitHub Release
+- GitHub Actions 自动构建与发布流程
+- 受保护的稳定发布分支
+- Windows 真机完整安装验收
 
 ## 开源说明
 
-本项目基于 Hermes Agent 开源项目进行定制发行。保留上游开源许可文件，并在巨鲸网络品牌包装下维护独立发布通道。
+本项目基于 Hermes Agent 开源项目定制发行，保留上游开源许可，并在巨鲸网络品牌包装下维护独立发布通道。
