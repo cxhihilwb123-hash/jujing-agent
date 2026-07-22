@@ -48,7 +48,7 @@ Desktop shell updates are distributed as signed and notarized DMGs.
 5. Tag the verified release, for example:
 
    ```bash
-   git tag jujing-v0.17.0-1
+   git tag jujing-v0.19.0-1
    ```
 
 6. Publish the tag and signed desktop artifacts.

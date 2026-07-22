@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://whale-desk.com/">官方网站</a> ·
-  <a href="https://github.com/cxhihilwb123-hash/jujing-agent/releases/tag/jujing-desktop-v0.17.0">下载安装</a> ·
+  <a href="https://github.com/cxhihilwb123-hash/jujing-agent/releases/tag/jujing-desktop-v0.19.0">下载安装</a> ·
   <a href="docs/jujing-release-flow.md">发布说明</a>
 </p>
 
@@ -41,17 +41,17 @@
 
 ## 下载与安装
 
-当前桌面版本为 `0.17.0`：
+当前桌面版本为 `0.19.0`：
 
 | 平台 | 安装包 | 适用设备 |
 | --- | --- | --- |
-| macOS | `Jujing-Agent-0.17.0-mac-arm64.dmg` | Apple Silicon（M 系列芯片） |
-| Windows | `Jujing-Agent-0.17.0-win-x64.exe` | Windows x64 |
+| macOS | `Jujing-Agent-0.19.0-mac-arm64.dmg` | Apple Silicon（M 系列芯片） |
+| Windows | `Jujing-Agent-0.19.0-win-x64.exe` | Windows x64 |
 
 请从以下官方渠道下载：
 
 - [巨鲸智能体官方网站](https://whale-desk.com/)
-- [GitHub Releases 发布页](https://github.com/cxhihilwb123-hash/jujing-agent/releases/tag/jujing-desktop-v0.17.0)
+- [GitHub Releases 发布页](https://github.com/cxhihilwb123-hash/jujing-agent/releases/tag/jujing-desktop-v0.19.0)
 - [SHA256 校验文件](https://whale-desk.com/downloads/SHA256SUMS.txt)
 
 安装包已包含桌面应用和首次启动所需的初始化程序。首次打开时，应用会在独立目录中准备巨鲸智能体运行环境，不要求客户预先安装上游 Hermes。
