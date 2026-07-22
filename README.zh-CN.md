@@ -8,12 +8,12 @@
 
 发布页：
 
-https://github.com/cxhihilwb123-hash/jujing-agent/releases/tag/jujing-desktop-v0.17.0
+https://github.com/cxhihilwb123-hash/jujing-agent/releases/tag/jujing-desktop-v0.19.0
 
 安装包：
 
-- macOS Apple Silicon: `Jujing-Agent-0.17.0-mac-arm64.dmg`
-- Windows x64: `Jujing-Agent-0.17.0-win-x64.exe`
+- macOS Apple Silicon: `Jujing-Agent-0.19.0-mac-arm64.dmg`
+- Windows x64: `Jujing-Agent-0.19.0-win-x64.exe`
 
 当前版本适合小规模客户试用。正式大规模交付前，建议完成 macOS 公证和 Windows 代码签名。
 

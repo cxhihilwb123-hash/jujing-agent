@@ -154,14 +154,19 @@ def test_sigterm_with_kanban_task_env_terminates_quickly():
         # is immediate. Give generous headroom for slow CI runners.
         deadline = t0 + 2.0
         while time.time() < deadline:
-            if not _is_alive_like_dispatcher(proc.pid):
+            # Popen.poll() reaps the direct child on platforms without /proc
+            # (notably macOS), where os.kill(pid, 0) still reports zombies as
+            # alive. Linux additionally retains the dispatcher-style check.
+            exited = proc.poll() is not None
+            dispatcher_sees_dead = not _is_alive_like_dispatcher(proc.pid)
+            if exited or dispatcher_sees_dead:
                 elapsed = time.time() - t0
                 assert elapsed < 2.0
                 return
             time.sleep(0.02)
         pytest.fail(
-            f"process still alive 2s after SIGTERM with HERMES_KANBAN_TASK set "
-            f"(dispatcher would keep extending claim) — fix regressed"
+            "process still alive 2s after SIGTERM with HERMES_KANBAN_TASK set "
+            "(dispatcher would keep extending claim) — fix regressed"
         )
     finally:
         _cleanup(proc)

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { HermesConfigRecord } from '@/hermes'
 
-import { type I18nConfigClient, I18nProvider, useI18n } from './context'
+import { DESKTOP_LOCALE_PREFERENCE_KEY, type I18nConfigClient, I18nProvider, useI18n } from './context'
 import type { Locale } from './types'
 
 function LanguageProbe({ target = 'zh' }: { target?: Locale }) {
@@ -27,6 +27,7 @@ function LanguageProbe({ target = 'zh' }: { target?: Locale }) {
 describe('I18nProvider', () => {
   afterEach(() => {
     cleanup()
+    window.localStorage.clear()
     vi.restoreAllMocks()
   })
 
@@ -57,7 +58,9 @@ describe('I18nProvider', () => {
     expect(screen.getByTestId('label').textContent).toBe('Language')
   })
 
-  it('keeps Simplified Chinese when backend config only reports the Hermes English default', async () => {
+  it('honors an explicitly configured English locale', async () => {
+    window.localStorage.setItem(DESKTOP_LOCALE_PREFERENCE_KEY, 'en')
+
     const configClient: I18nConfigClient = {
       getConfig: vi.fn().mockResolvedValue({ display: { language: 'en' } }),
       saveConfig: vi.fn()
@@ -71,8 +74,8 @@ describe('I18nProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'))
 
-    expect(screen.getByTestId('locale').textContent).toBe('zh')
-    expect(screen.getByTestId('label').textContent).toBe('语言')
+    expect(screen.getByTestId('locale').textContent).toBe('en')
+    expect(screen.getByTestId('label').textContent).toBe('Language')
     expect(configClient.saveConfig).not.toHaveBeenCalled()
   })
 
