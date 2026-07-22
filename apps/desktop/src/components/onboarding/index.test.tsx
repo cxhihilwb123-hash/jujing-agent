@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { I18nProvider } from '@/i18n'
 import { $desktopOnboarding, type DesktopOnboardingState, type OnboardingContext } from '@/store/onboarding'
 import type { OAuthProvider } from '@/types/hermes'
 
@@ -33,6 +34,14 @@ function setProviders(providers: OAuthProvider[]) {
 
 const ctx: OnboardingContext = { requestGateway: async () => undefined as never }
 
+function renderPicker() {
+  return render(
+    <I18nProvider configClient={null} initialLocale="zh">
+      <Picker ctx={ctx} />
+    </I18nProvider>
+  )
+}
+
 afterEach(() => {
   cleanup()
 
@@ -58,7 +67,7 @@ afterEach(() => {
 describe('onboarding Picker', () => {
   it('features the Jujing account provider and hides other providers behind a disclosure', () => {
     setProviders([provider('anthropic', 'Anthropic Claude'), provider('nous', 'Nous Portal')])
-    render(<Picker ctx={ctx} />)
+    renderPicker()
 
     expect(screen.getByText('巨鲸网络账号')).toBeTruthy()
     expect(screen.getByText('推荐')).toBeTruthy()
@@ -79,7 +88,7 @@ describe('onboarding Picker', () => {
       provider('minimax-oauth', 'MiniMax'),
       provider('nous', 'Nous Portal')
     ])
-    render(<Picker ctx={ctx} />)
+    renderPicker()
     fireEvent.click(screen.getByRole('button', { name: '其他提供方' }))
 
     const labels = screen
@@ -96,7 +105,7 @@ describe('onboarding Picker', () => {
 
   it('shows every provider directly when Nous Portal is absent', () => {
     setProviders([provider('anthropic', 'Anthropic Claude'), provider('openai-codex', 'OpenAI Codex / ChatGPT')])
-    render(<Picker ctx={ctx} />)
+    renderPicker()
 
     expect(screen.getByText('Fireworks AI')).toBeTruthy()
     expect(screen.getByText('Anthropic API Key')).toBeTruthy()
@@ -107,7 +116,7 @@ describe('onboarding Picker', () => {
 
   it('offers "choose later" on first run and persists the skip', () => {
     setProviders([provider('nous', 'Nous Portal')])
-    render(<Picker ctx={ctx} />)
+    renderPicker()
 
     const skip = screen.getByRole('button', { name: '稍后再选择提供方' })
 
@@ -119,7 +128,7 @@ describe('onboarding Picker', () => {
   it('hides "choose later" in manual (add-provider) mode', () => {
     setProviders([provider('nous', 'Nous Portal')])
     $desktopOnboarding.set({ ...$desktopOnboarding.get(), manual: true })
-    render(<Picker ctx={ctx} />)
+    renderPicker()
 
     expect(screen.queryByRole('button', { name: '稍后再选择提供方' })).toBeNull()
   })

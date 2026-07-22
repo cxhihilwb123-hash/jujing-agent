@@ -926,6 +926,12 @@ def _read_claude_code_credentials_from_keychain() -> Optional[Dict[str, Any]]:
         logger.debug("Keychain: no entry found for 'Claude Code-credentials'")
         return None
 
+    # A subprocess wrapper or test double can legally return an object without
+    # text stdout. Treat that like an empty keychain result instead of passing
+    # an arbitrary object into json.loads().
+    if not isinstance(result.stdout, str):
+        return None
+
     raw = result.stdout.strip()
     if not raw:
         return None

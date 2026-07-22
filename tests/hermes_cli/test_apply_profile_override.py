@@ -27,7 +27,9 @@ def _run_apply_profile_override(
     Returns the value of os.environ["HERMES_HOME"] after the call,
     or None if unset.
     """
-    hermes_root = tmp_path / ".hermes"
+    # Preserve explicit legacy HERMES_HOME values, while exercising the
+    # Jujing-branded native default whenever the variable is unset.
+    hermes_root = Path(hermes_home) if hermes_home is not None else tmp_path / ".jujing-agent"
     hermes_root.mkdir(parents=True, exist_ok=True)
 
     if active_profile is not None:
@@ -151,7 +153,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
 
     def test_hermes_home_unset_default_profile_no_redirect(self, tmp_path, monkeypatch):
         """active_profile=default must not redirect HERMES_HOME."""
-        hermes_root = tmp_path / ".hermes"
+        hermes_root = tmp_path / ".jujing-agent"
         hermes_root.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -172,7 +174,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
         profile pre-parser must not interpret the Docker profile as a Hermes
         profile.
         """
-        hermes_root = tmp_path / ".hermes"
+        hermes_root = tmp_path / ".jujing-agent"
         hermes_root.mkdir(parents=True, exist_ok=True)
         argv = [
             "hermes",
@@ -265,7 +267,7 @@ class TestSupervisedChildIgnoresStickyProfile:
         ``profiles``), and a sticky ``active_profile`` of another profile.
         The reserved default slot must stay on the root profile.
         """
-        hermes_root = tmp_path / ".hermes"
+        hermes_root = tmp_path / ".jujing-agent"
         hermes_root.mkdir(parents=True, exist_ok=True)
         (hermes_root / "active_profile").write_text("briefer")
         (hermes_root / "profiles" / "briefer").mkdir(parents=True, exist_ok=True)
@@ -305,7 +307,7 @@ class TestSupervisedChildIgnoresStickyProfile:
         """A supervised named-profile slot passes ``-p <name>`` explicitly;
         that must still resolve (the sentinel guard only skips the sticky
         active_profile fallback, never an explicit flag)."""
-        hermes_root = tmp_path / ".hermes"
+        hermes_root = tmp_path / ".jujing-agent"
         hermes_root.mkdir(parents=True, exist_ok=True)
         (hermes_root / "active_profile").write_text("briefer")
         (hermes_root / "profiles" / "briefer").mkdir(parents=True, exist_ok=True)
@@ -322,4 +324,3 @@ class TestSupervisedChildIgnoresStickyProfile:
         result = os.environ.get("HERMES_HOME")
         assert result is not None
         assert result.endswith("coder")
-

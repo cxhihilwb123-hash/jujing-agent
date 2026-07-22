@@ -151,7 +151,7 @@ describe('settings helpers', () => {
   describe('providerGroup', () => {
     it('maps a provider env var to its labeled group', () => {
       expect(providerGroup('XAI_API_KEY')).toBe('xAI')
-      expect(providerGroup('NOUS_API_KEY')).toBe('Nous Portal')
+      expect(providerGroup('NOUS_API_KEY')).toBe('巨鲸网络账号')
       expect(providerGroup('FIREWORKS_API_KEY')).toBe('Fireworks AI')
       expect(providerGroup('OPENROUTER_API_KEY')).toBe('OpenRouter')
     })

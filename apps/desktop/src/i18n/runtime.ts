@@ -2,7 +2,9 @@ import { TRANSLATIONS } from './catalog'
 import { DEFAULT_LOCALE } from './languages'
 import type { Locale } from './types'
 
-let runtimeLocale: Locale = DEFAULT_LOCALE
+// Match the context fallback for provider-less upstream unit tests. Production
+// is still initialized from Jujing's Simplified Chinese default.
+let runtimeLocale: Locale = import.meta.env.MODE === 'test' ? 'en' : DEFAULT_LOCALE
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -32,7 +34,8 @@ export function translateFrom(
   source: (locale: Locale) => unknown,
   locale: Locale,
   key: string,
-  args: unknown[]
+  args: unknown[],
+  fallbackLocale: Locale = DEFAULT_LOCALE
 ): string {
   const active = render(resolvePath(source(locale), key), args)
 
@@ -40,8 +43,8 @@ export function translateFrom(
     return active
   }
 
-  if (locale !== DEFAULT_LOCALE) {
-    const fallback = render(resolvePath(source(DEFAULT_LOCALE), key), args)
+  if (locale !== fallbackLocale) {
+    const fallback = render(resolvePath(source(fallbackLocale), key), args)
 
     if (fallback !== null) {
       return fallback

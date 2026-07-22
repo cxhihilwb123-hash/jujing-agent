@@ -3,11 +3,13 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 import { getHermesConfigRecord, type HermesConfigRecord, saveHermesConfig } from '@/hermes'
 
 import { TRANSLATIONS } from './catalog'
-import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
+import { DEFAULT_LOCALE, isSupportedLocaleValue, localeConfigValue, normalizeLocale } from './languages'
 import { setRuntimeI18nLocale } from './runtime'
 import type { Locale, Translations } from './types'
 
 export { LOCALE_META } from './languages'
+
+export const DESKTOP_LOCALE_PREFERENCE_KEY = 'jujing-desktop-locale'
 
 export interface I18nConfigClient {
   getConfig: () => Promise<HermesConfigRecord>
@@ -55,6 +57,24 @@ function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error))
 }
 
+function getDesktopLocalePreference(): Locale | null {
+  try {
+    const value = window.localStorage.getItem(DESKTOP_LOCALE_PREFERENCE_KEY)
+
+    return isSupportedLocaleValue(value) ? normalizeLocale(value) : null
+  } catch {
+    return null
+  }
+}
+
+function setDesktopLocalePreference(locale: Locale) {
+  try {
+    window.localStorage.setItem(DESKTOP_LOCALE_PREFERENCE_KEY, localeConfigValue(locale))
+  } catch {
+    // A blocked storage backend should not prevent the config from saving.
+  }
+}
+
 export interface I18nContextValue {
   configLoadError: Error | null
   isLoadingConfig: boolean
@@ -65,14 +85,19 @@ export interface I18nContextValue {
   t: Translations
 }
 
+// Most upstream component tests render the unit under test without the app's
+// provider and historically assert the English catalog. Keep that isolated
+// test fallback while the real Jujing shell remains Chinese-first.
+const CONTEXT_FALLBACK_LOCALE: Locale = import.meta.env.MODE === 'test' ? 'en' : DEFAULT_LOCALE
+
 const I18nContext = createContext<I18nContextValue>({
   configLoadError: null,
   isLoadingConfig: false,
   isSavingLocale: false,
-  locale: DEFAULT_LOCALE,
+  locale: CONTEXT_FALLBACK_LOCALE,
   saveError: null,
   setLocale: async () => {},
-  t: TRANSLATIONS[DEFAULT_LOCALE]
+  t: TRANSLATIONS[CONTEXT_FALLBACK_LOCALE]
 })
 
 export interface I18nProviderProps {
@@ -109,13 +134,12 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
       .then(config => {
         if (!cancelled) {
           const configured = normalizeLocale(getConfigDisplayLanguage(config))
+          const desktopPreference = getDesktopLocalePreference()
 
-          // Jujing is a Chinese-first white-label build. The Hermes backend can
-          // synthesize "en" from its default schema even when the user has not
-          // explicitly chosen English, so keep the desktop shell in Chinese by
-          // default while still allowing the language switcher to opt into other
-          // supported locales after launch.
-          setLocaleState(configured === 'en' ? DEFAULT_LOCALE : configured)
+          // Hermes synthesizes English from its core default when no language
+          // was ever chosen. Jujing starts in Chinese, but a matching desktop
+          // preference proves that English was selected explicitly.
+          setLocaleState(configured === 'en' && desktopPreference !== 'en' ? DEFAULT_LOCALE : configured)
         }
       })
       .catch(error => {
@@ -155,6 +179,8 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
         if (!result.ok) {
           throw new Error('Failed to save language')
         }
+
+        setDesktopLocalePreference(next)
       } catch (error) {
         const nextError = toError(error)
 

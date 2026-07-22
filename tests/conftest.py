@@ -169,6 +169,7 @@ def _looks_like_credential(name: str) -> bool:
 # HERMES_* vars that change test behavior by being set. Unset all of these
 # unconditionally — individual tests that need them set do so explicitly.
 _HERMES_BEHAVIORAL_VARS = frozenset({
+    "HERMES_LANGUAGE",
     "HERMES_YOLO_MODE",
     "HERMES_INTERACTIVE",
     "HERMES_QUIET",
@@ -370,6 +371,14 @@ def _hermetic_environment(tmp_path, monkeypatch):
     (fake_hermes_home / "memories").mkdir()
     (fake_hermes_home / "skills").mkdir()
     monkeypatch.setenv("HERMES_HOME", str(fake_hermes_home))
+
+    # Some gateway modules resolve translated strings during test collection,
+    # before this fixture points HERMES_HOME at the isolated directory. Drop
+    # that process-local result so tests cannot inherit the developer's real
+    # display.language setting.
+    i18n_module = sys.modules.get("agent.i18n")
+    if i18n_module is not None:
+        i18n_module.reset_language_cache()
 
     # 4. Deterministic locale / timezone / hashseed. CI runs in UTC with
     #    C.UTF-8 locale; local dev often doesn't. Pin everything.

@@ -2621,7 +2621,7 @@ def _hermes_home_for_target_user(target_home_dir: str) -> str:
 
     When installing a system service via sudo, get_hermes_home() resolves to
     root's home.  This translates it to the target user's equivalent path:
-      /root/.hermes                    → /home/alice/.hermes
+      /root/.jujing-agent              → /home/alice/.jujing-agent
       /root/.hermes/profiles/coder     → /home/alice/.hermes/profiles/coder
       /opt/custom-hermes               → /opt/custom-hermes  (kept as-is)
     """
@@ -2634,20 +2634,25 @@ def _hermes_home_for_target_user(target_home_dir: str) -> str:
     # Keep explicit custom paths lexical. Resolving a non-existent custom path
     # can rewrite it through host-specific path mappings, which would bake a
     # different HERMES_HOME into the generated service unit.
-    current_default = Path.home() / ".hermes"
-    target_default = Path(target_home_dir) / ".hermes"
+    current_home = Path.home()
 
-    # Default ~/.hermes → remap to target user's default
-    if current_hermes == current_default:
-        return str(target_default)
+    # The branded default is .jujing-agent. Keep the legacy .hermes layout
+    # compatible for explicit HERMES_HOME values and existing profiles.
+    for leaf in (".jujing-agent", ".hermes"):
+        current_default = current_home / leaf
+        target_default = Path(target_home_dir) / leaf
 
-    # Profile or subdir of ~/.hermes → preserve the relative structure
-    try:
-        relative = current_hermes.relative_to(current_default)
-        return str(target_default / relative)
-    except ValueError:
-        # Completely custom path (not under ~/.hermes) — keep as-is
-        return str(current_hermes)
+        if current_hermes == current_default:
+            return str(target_default)
+
+        try:
+            relative = current_hermes.relative_to(current_default)
+            return str(target_default / relative)
+        except ValueError:
+            continue
+
+    # Completely custom path (not under either supported home) — keep as-is.
+    return str(current_hermes)
 
 
 def _build_service_path_dirs(project_root: Path | None = None) -> list[str]:

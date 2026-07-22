@@ -54,6 +54,9 @@
 - [GitHub Releases 发布页](https://github.com/cxhihilwb123-hash/jujing-agent/releases/tag/jujing-desktop-v0.19.0)
 - [SHA256 校验文件](https://whale-desk.com/downloads/SHA256SUMS.txt)
 
+在 Windows 上从源码安装或排查初始化问题时，可在 PowerShell 中运行
+`scripts/install.ps1`；普通客户仍建议直接使用上表中的桌面安装包。
+
 安装包已包含桌面应用和首次启动所需的初始化程序。首次打开时，应用会在独立目录中准备巨鲸智能体运行环境，不要求客户预先安装上游 Hermes。
 
 > 当前版本尚未配置 Apple Developer ID 公证和 Windows 商业代码签名。macOS 可能要求用户通过“右键打开”或系统设置确认启动，Windows 可能显示 SmartScreen 提示。完成双平台正式签名后更适合大规模商业分发。
